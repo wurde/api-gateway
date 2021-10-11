@@ -61,6 +61,7 @@ resource "kubernetes_deployment" "api_gateway" {
       environment = var.environment
     }
   }
+
   spec {
     replicas = var.replicas
     selector {
@@ -186,6 +187,9 @@ resource "kubernetes_deployment" "api_gateway" {
       }
     }
   }
+
+  # Wait for the deployment to successfully roll out.
+  wait_for_rollout = true
 }
 
 # An abstract way to expose an application running on a set
