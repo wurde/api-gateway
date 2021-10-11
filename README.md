@@ -1,5 +1,7 @@
 # API Gateway
 
+An API Gateway deployment.
+
 ## License
 
 This project is __FREE__ to use, reuse, remix, and resell.
