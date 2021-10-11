@@ -18,14 +18,14 @@ resource "kubernetes_namespace" "main" {
 # https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
 # https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/deployment
 #
-resource "kubernetes_deployment" "api-gateway" {
+resource "kubernetes_deployment" "api_gateway" {
   # (Required) Deployment metadata.
   # https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#metadata
   metadata {
-    name  = "api-gateway"
+    name  = local.app_name
 
     # A DNS compatible label that objects are subdivided into.
-    namespace = kubernetes_namespace.main.metadata.0.name
+    namespace = local.namespace_name
 
     # A map of string keys and values that can be used to
     # organize and categorize objects.
@@ -33,14 +33,14 @@ resource "kubernetes_deployment" "api-gateway" {
     # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
     #
     labels {
-      "environment" = var.environment
+      environment = var.environment
     }
   }
   spec {
-    replicas = 2
+    replicas = var.replicas
     selector {
       match_labels = {
-        app = "api-gateway"
+        app = local.app_name
       }
     }
     template {
@@ -48,14 +48,13 @@ resource "kubernetes_deployment" "api-gateway" {
       # https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#metadata
       metadata {
         labels = {
-          app = "api-gateway"
+          app = local.app_name
         }
       }
       spec {
         container {
-          # https://registry.hub.docker.com/r/devopsfaith/krakend
-          image = "devopsfaith/krakend:1.4.1"
-          name  = "api-gateway"
+          image = local.container_image
+          name  = local.app_name
 
           env {
             name  = "ENVIRONMENT"
@@ -66,74 +65,77 @@ resource "kubernetes_deployment" "api-gateway" {
             container_port = 8080
           }
 
-          resources {
-            # The min amount of resources required.
-            requests {
-              # 1/1000th of a CPU core.
-              cpu    = "250m"
-              memory = "256Mi"
-            }
-            # The max amount of resources allowed.
-            limits {
-              # 1/1000th of a CPU core.
-              cpu    = "250m"
-              memory = "256Mi"
-            }
-          }
+          # TODO
+          #resources {
+          #  # The min amount of resources required.
+          #  requests {
+          #    # 1/1000th of a CPU core.
+          #    cpu    = "250m"
+          #    memory = "256Mi"
+          #  }
+          #  # The max amount of resources allowed.
+          #  limits {
+          #    # 1/1000th of a CPU core.
+          #    cpu    = "250m"
+          #    memory = "256Mi"
+          #  }
+          #}
 
           # Indicates whether the container is running.
           # If the liveness probe fails, the kubelet
           # kills the container, and the container is
           # subjected to its restart policy.
-          liveness_probe {
-            http_get {
-              path = "/liveness"
-              port = 80
-
-              http_header {
-                name  = "X-Custom-Header"
-                value = "Awesome"
-              }
-            }
-
-            initial_delay_seconds = 3
-            period_seconds        = 3
-          }
+          # TODO
+          #liveness_probe {
+          #  http_get {
+          #    path = "/liveness"
+          #    port = 80
+          #
+          #    http_header {
+          #      name  = "X-Custom-Header"
+          #      value = "Awesome"
+          #    }
+          #  }
+          #
+          #  initial_delay_seconds = 3
+          #  period_seconds        = 3
+          #}
           # Indicates whether the container is ready
           # to respond to requests. If the readiness
           # probe fails, the endpoints controller
           # removes the Pod's IP address from the
           # endpoints of all Services that match the
           # Pod.
-          readiness_probe {
-            http_get {
-              path = "/readiness"
-              port = 80
-            }
-
-            initial_delay_seconds = 5
-            failure_threshold     = 3
-            period_seconds        = 5
-          }
+          #readiness_probe {
+          #  http_get {
+          #    path = "/readiness"
+          #    port = 80
+          #  }
+          #
+          #  initial_delay_seconds = 5
+          #  failure_threshold     = 3
+          #  period_seconds        = 5
+          #}
         }
 
-        dns_config {
-          nameservers = ["1.1.1.1", "8.8.8.8", "9.9.9.9"]
-          searches    = ["example.com"]
-
-          option {
-            name  = "ndots"
-            value = 1
-          }
-
-          option {
-            name = "use-vc"
-          }
-        }
-
-        dns_policy = "None"
+        #dns_config {
+        #  nameservers = ["1.1.1.1", "8.8.8.8", "9.9.9.9"]
+        #  searches    = ["example.com"]
+        #
+        #  option {
+        #    name  = "ndots"
+        #    value = 1
+        #  }
+        #
+        #  option {
+        #    name = "use-vc"
+        #  }
+        #}
+        #
+        #dns_policy = "None"
       }
 
+      # TODO
       volume_mount {
         mount_path = "/etc/krakend"
         read_only  = true
@@ -154,14 +156,14 @@ resource "kubernetes_deployment" "api-gateway" {
 # https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/service
 # https://kubernetes.io/docs/concepts/services-networking/service/
 #
-resource "kubernetes_service" "api-gateway" {
+resource "kubernetes_service" "api_gateway" {
   # (Required) Service metadata.
   # https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#metadata
   metadata {
-    name = "api-gateway"
+    name = local.app_name
 
     # A DNS compatible label that objects are subdivided into.
-    namespace = kubernetes_namespace.main.metadata.0.name
+    namespace = local.namespace_name
 
     # A map of string keys and values that can be used to
     # organize and categorize objects.
@@ -169,7 +171,7 @@ resource "kubernetes_service" "api-gateway" {
     # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
     #
     labels {
-      "environment" = var.environment
+      environment = var.environment
     }
   }
   strategy {
@@ -185,7 +187,7 @@ resource "kubernetes_service" "api-gateway" {
   }
   spec {
     selector = {
-      app = kubernetes_deployment.api-gateway.spec.0.template.0.metadata.0.labels.app
+      app = local.app_name
     }
     session_affinity = "ClientIP"
     port {
