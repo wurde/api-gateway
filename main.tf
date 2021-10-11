@@ -47,7 +47,7 @@ resource "kubernetes_deployment" "api_gateway" {
   # (Required) Deployment metadata.
   # https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#metadata
   metadata {
-    name  = local.app_name
+    name = local.app_name
 
     # A DNS compatible label that objects are subdivided into.
     namespace = local.namespace_name
@@ -147,7 +147,8 @@ resource "kubernetes_deployment" "api_gateway" {
             mount_path = "/etc/krakend"
             read_only  = true
 
-            name = kubernetes_persistent_volume.krakend_config.uid
+            # This must match the Name of a Volume.
+            name = kubernetes_persistent_volume.krakend_config.metadata.0.name
           }
         }
 
@@ -166,11 +167,23 @@ resource "kubernetes_deployment" "api_gateway" {
         #}
         #
         #dns_policy = "None"
-      }
 
-      # (default) Always, OnFailure, or Never.
-      # https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restartpolicy
-      restart_policy = "OnFailure"
+        #strategy {
+        #  # (default) RollingUpdate, Recreate
+        #  type = "RollingUpdate"
+
+        #  rolling_update {
+        #    # Max number of pods that can be scheduled above desired number.
+        #    max_surge = "0"
+        #    # Max number of pods that can be unavailable.
+        #    max_unavailable = "50%"
+        #  }
+        #}
+
+        # (default) Always, OnFailure, or Never.
+        # https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restartpolicy
+        restart_policy = "OnFailure"
+      }
     }
   }
 }
@@ -195,21 +208,11 @@ resource "kubernetes_service" "api_gateway" {
     #
     # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
     #
-    labels {
+    labels = {
       environment = var.environment
     }
   }
-  strategy {
-    # (default) RollingUpdate, Recreate
-    type = "RollingUpdate"
-    rolling_update {
-      # Max number of pods that can be scheduled above desired number.
-      max_surge = "0"
 
-      # Max number of pods that can be unavailable.
-      max_unavailable = "50%"
-    }
-  }
   spec {
     selector = {
       app = local.app_name
