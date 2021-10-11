@@ -11,6 +11,31 @@ resource "kubernetes_namespace" "main" {
   }
 }
 
+# A Persistent Volume (PV). They have a lifecycle
+# independent of any individual pod that uses the PV.
+# https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/persistent_volume
+resource "kubernetes_persistent_volume" "krakend_config" {
+  metadata {
+    name = "krakend-config"
+  }
+  spec {
+    # https://github.com/kubernetes/community/blob/master/contributors/design-proposals/scheduling/resources.md
+    capacity = {
+      storage = "64Mi"
+    }
+    access_modes = ["ReadWriteMany"]
+    persistent_volume_source {
+      aws_elastic_block_store {
+        # Unique ID of the persistent disk resource in AWS.
+        volume_id = ""
+        # Filesystem type of the target volume.
+        # Examples: "ext4", "xfs", "ntfs".
+        fs_type = "ext4"
+      }
+    }
+  }
+}
+
 # A Deployment provides declarative updates for Pods and
 # ReplicaSets. If there are too many pods, it will kill
 # some. If there are too few, the it will start more.
@@ -32,7 +57,7 @@ resource "kubernetes_deployment" "api_gateway" {
     #
     # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
     #
-    labels {
+    labels = {
       environment = var.environment
     }
   }
@@ -116,6 +141,14 @@ resource "kubernetes_deployment" "api_gateway" {
           #  failure_threshold     = 3
           #  period_seconds        = 5
           #}
+
+          # TODO
+          volume_mount {
+            mount_path = "/etc/krakend"
+            read_only  = true
+
+            name = kubernetes_persistent_volume.krakend_config.uid
+          }
         }
 
         #dns_config {
@@ -133,14 +166,6 @@ resource "kubernetes_deployment" "api_gateway" {
         #}
         #
         #dns_policy = "None"
-      }
-
-      # TODO
-      volume_mount {
-        mount_path = "/etc/krakend"
-        read_only  = true
-
-        name = kubernetes_persistent_volume.krakend-config.uid
       }
 
       # (default) Always, OnFailure, or Never.

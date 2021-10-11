@@ -33,5 +33,15 @@ override.tf.json
 .terraformrc
 terraform.rc
 
+# Ignore dependency lock files
+*.lock.hcl
+
+# Ignore temporary files
+**/tmp/*
+**/tmp-*
+
+# Ignore .kube config files
+**/.kube/*
+
 # Ignore KrakenD configuration files
 krakend.json
