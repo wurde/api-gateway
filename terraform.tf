@@ -10,5 +10,11 @@ terraform {
       source  = "hashicorp/kubernetes"
       version = "~> 2.5"
     }
+
+    # https://registry.terraform.io/providers/hashicorp/null
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.1"
+    }
   }
 }
